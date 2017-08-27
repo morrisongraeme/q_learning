@@ -126,11 +126,12 @@ class Brain:
         w1 = tf.get_variable("w1", shape=[self.n_states, self.n_hidden_neurons])
         b1 = bias_variable([self.n_hidden_neurons])
         w2 = tf.get_variable("w2", shape=[self.n_hidden_neurons, self.n_actions])
+        b2 = bias_variable([self.n_actions])
         h1 = tf.nn.relu(tf.matmul(self.inputs1, w1) + b1)
-        q_out = tf.matmul(h1, w2)
+        q_out = tf.matmul(h1, w2) + b2
         self.prediction = q_out
         self.next_q = tf.placeholder(shape=[None, self.n_actions], dtype=tf.float32)
-        loss = tf.reduce_mean(tf.square(self.next_q - q_out))
+        loss = tf.reduce_mean(tf.squared_difference(self.next_q, q_out))
         trainer = tf.train.RMSPropOptimizer(learning_rate=0.00025)
         self.update_model = trainer.minimize(loss)
         init = tf.global_variables_initializer()

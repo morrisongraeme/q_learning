@@ -20,7 +20,7 @@ explore_rate_array = np.zeros((n_learning_repeats, max_episodes))
 # Loop over repeats
 for repeat in range(n_learning_repeats):
     # Initialise agent
-    agent = simple_dqn.Agent(n_states, n_actions, decay_explore=0.0001)
+    agent = simple_dqn.Agent(n_states, n_actions, decay_explore=0.001)
     # Loop over episodes
     for episode in range(max_episodes):
         episode_reward = agent.execute_episode(max_time_steps, render, env)
