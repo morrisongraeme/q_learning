@@ -3,7 +3,7 @@ import numpy as np
 
 
 # Plots reward averaged every N episodes, explore rate and learning rate
-def plot_reward_explore_learning(reward_list,explore_rate_list,learning_rate_list,stride=10):
+def plot_reward_explore_learning(reward_list, explore_rate_list, learning_rate_list, stride=10):
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True)
 
     ax1.plot(moving_average(reward_list, stride))
@@ -14,9 +14,10 @@ def plot_reward_explore_learning(reward_list,explore_rate_list,learning_rate_lis
     ax2.set_xlabel('Episodes')
     ax2.set_ylabel('Explore rate')
 
-    ax3.plot(learning_rate_list)
-    ax3.set_xlabel('Episodes')
-    ax3.set_ylabel('Learning rate')
+    if learning_rate_list is not None:
+        ax3.plot(learning_rate_list)
+        ax3.set_xlabel('Episodes')
+        ax3.set_ylabel('Learning rate')
 
     plt.show()
 
