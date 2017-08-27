@@ -9,11 +9,17 @@ def weight_variable(shape):
     return tf.Variable(initial)
 
 
+# Function for creating tensorflow bias variables
+def bias_variable(shape):
+    initial = tf.constant(float(0), shape=shape)
+    return tf.Variable(initial)
+
+
 # Define the Agent class
 class Agent:
 
     def __init__(self, n_states, n_actions, discount=0.99, min_explore=0.01, max_explore=1,
-                 decay_explore=0.0001, mem_capacity=100000, batch_size=64):
+                 decay_explore=0.0001, mem_capacity=100000, batch_size=64, n_hidden_neurons = 64):
         # Initialise number of steps as zero
         self.steps = 0
         # Store hyper-parameters
@@ -25,7 +31,7 @@ class Agent:
         self.explore_decay_rate = decay_explore
         self.batch_size = batch_size
         # Initialise brain and memory
-        self.brain = Brain(n_states, n_actions)
+        self.brain = Brain(n_states, n_actions, n_hidden_neurons)
         self.memory = Memory(mem_capacity)
 
     def act(self, state):
@@ -107,21 +113,25 @@ class Agent:
 
 # Define the Brain class
 class Brain:
-    def __init__(self, n_states, n_actions):
+    def __init__(self, n_states, n_actions, n_hidden_neurons):
         self.n_states = n_states
         self.n_actions = n_actions
+        self.n_hidden_neurons = n_hidden_neurons
         self.sess = self._create_sess()
 
     def _create_sess(self):
         # Create a tensorflow session, which defines the NN used in the agent's brain and the training approach
         tf.reset_default_graph()
         self.inputs1 = tf.placeholder(shape=[None, self.n_states], dtype=tf.float32)
-        w = weight_variable([self.n_states, self.n_actions])
-        q_out = tf.matmul(self.inputs1, w)
+        w1 = tf.get_variable("w1", shape=[self.n_states, self.n_hidden_neurons])
+        b1 = bias_variable([self.n_hidden_neurons])
+        w2 = tf.get_variable("w2", shape=[self.n_hidden_neurons, self.n_actions])
+        h1 = tf.nn.relu(tf.matmul(self.inputs1, w1) + b1)
+        q_out = tf.matmul(h1, w2)
         self.prediction = q_out
         self.next_q = tf.placeholder(shape=[None, self.n_actions], dtype=tf.float32)
         loss = tf.reduce_mean(tf.square(self.next_q - q_out))
-        trainer = tf.train.GradientDescentOptimizer(learning_rate=0.00025)
+        trainer = tf.train.RMSPropOptimizer(learning_rate=0.00025)
         self.update_model = trainer.minimize(loss)
         init = tf.global_variables_initializer()
         sess = tf.Session()

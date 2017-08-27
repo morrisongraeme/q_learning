@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 env = gym.make('CartPole-v0')
 render = False
 max_episodes = 600
-max_time_steps = 400
-n_learning_repeats = 10
+max_time_steps = 2000
+n_learning_repeats = 1
 n_states = env.observation_space.shape[0]
 n_actions = env.action_space.n
 
