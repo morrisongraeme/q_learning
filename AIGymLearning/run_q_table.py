@@ -2,6 +2,7 @@ import gym
 import numpy as np
 import q_table_agent as q_table
 import results_plots as plots
+import matplotlib.pyplot as plt
 
 
 # Choose environment and run settings
@@ -35,6 +36,6 @@ for episode in range(max_episodes):
                   str(np.mean(reward_list[episode-10:episode])))
 
 plots.plot_reward_explore_learning(reward_list, explore_rate_list, learning_rate_list)
-
+plt.show()
 
 
