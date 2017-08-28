@@ -151,10 +151,10 @@ class Brain:
 
 # Define the Memory class
 class Memory:
-    samples = []
 
     def __init__(self, capacity):
         self.capacity = capacity
+        self.samples = []
 
     def add(self, sample):
         self.samples.append(sample)
