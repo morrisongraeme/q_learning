@@ -46,7 +46,6 @@ def plot_reward_explore_all(reward_array, explore_rate_array, stride=10):
     fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
 
     for i in range(reward_array.shape[0]):
-        print(i)
         ax1.plot(moving_average(reward_array[i, :], stride), '-')
     ax1.set_xlabel('Episodes')
     ax1.set_ylabel('Episode reward')

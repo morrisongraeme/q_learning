@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 # Choose environment and run settings
 env = gym.make('CartPole-v0')
 render = False
-max_episodes = 600
+max_episodes = 1000
 max_time_steps = 2000
-n_learning_repeats = 1
+n_learning_repeats = 10
 n_states = env.observation_space.shape[0]
 n_actions = env.action_space.n
 
@@ -25,8 +25,9 @@ for repeat in range(n_learning_repeats):
     for episode in range(max_episodes):
         episode_reward = agent.execute_episode(max_time_steps, render, env)
         explore_rate = agent.get_explore_rate()
+        memory_size = agent.memory.get_memory_size()
         reward_array[repeat, episode] = episode_reward
-        explore_rate_array[repeat, episode] = explore_rate
+        explore_rate_array[repeat, episode] = memory_size
         if episode >= 10 and np.mod(episode, 10) == 0:
             print("Mean score over episodes " + str(episode - 10) + " to " + str(episode) + " = " +
                   str(np.mean(reward_array[repeat, episode-10:episode])))

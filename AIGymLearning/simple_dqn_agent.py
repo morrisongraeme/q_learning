@@ -19,7 +19,7 @@ def bias_variable(shape):
 class Agent:
 
     def __init__(self, n_states, n_actions, discount=0.99, min_explore=0.01, max_explore=1,
-                 decay_explore=0.0001, mem_capacity=100000, batch_size=64, n_hidden_neurons = 64):
+                 decay_explore=0.001, mem_capacity=100000, batch_size=64, n_hidden_neurons=64):
         # Initialise number of steps as zero
         self.steps = 0
         # Store hyper-parameters
@@ -74,7 +74,7 @@ class Agent:
             if new_state is None:
                 target[action] = reward
             else:
-                target[action] = reward + self.discount_factor*np.argmax(new_predictions[i])
+                target[action] = reward + self.discount_factor*np.amax(new_predictions[i])
 
             inputs[i] = state
             outputs[i] = target
@@ -165,3 +165,6 @@ class Memory:
     def sample(self, n_samples):
         n_samples = min(n_samples, len(self.samples))
         return random.sample(self.samples, n_samples)
+
+    def get_memory_size(self):
+        return len(self.samples)
