@@ -123,12 +123,12 @@ class Brain:
         # Create a tensorflow session, which defines the NN used in the agent's brain and the training approach
         tf.reset_default_graph()
         self.inputs1 = tf.placeholder(shape=[None, self.n_states], dtype=tf.float32)
-        w1 = tf.get_variable("w1", shape=[self.n_states, self.n_hidden_neurons])
-        b1 = bias_variable([self.n_hidden_neurons])
-        w2 = tf.get_variable("w2", shape=[self.n_hidden_neurons, self.n_actions])
-        b2 = bias_variable([self.n_actions])
-        h1 = tf.nn.relu(tf.matmul(self.inputs1, w1) + b1)
-        q_out = tf.matmul(h1, w2) + b2
+        self.w1 = tf.get_variable("w1", shape=[self.n_states, self.n_hidden_neurons])
+        self.b1 = bias_variable([self.n_hidden_neurons])
+        self.w2 = tf.get_variable("w2", shape=[self.n_hidden_neurons, self.n_actions])
+        self.b2 = bias_variable([self.n_actions])
+        h1 = tf.nn.relu(tf.matmul(self.inputs1, self.w1) + self.b1)
+        q_out = tf.matmul(h1, self.w2) + self.b2
         self.prediction = q_out
         self.next_q = tf.placeholder(shape=[None, self.n_actions], dtype=tf.float32)
         loss = tf.reduce_mean(tf.squared_difference(self.next_q, q_out))
@@ -137,6 +137,7 @@ class Brain:
         init = tf.global_variables_initializer()
         sess = tf.Session()
         sess.run(init)
+        self.saver = tf.train.Saver([self.w1, self.w2, self.b1, self.b2])  # Define a saver to use later
         return sess
 
     def train(self, inputs, outputs):
@@ -145,8 +146,14 @@ class Brain:
 
     def predict(self, states):
         # NN prediction of q values for a set of state inputs
-        a = self.sess.run([self.prediction], feed_dict={self.inputs1: np.reshape(states, (states.shape[0], 4))})
+        a = self.sess.run([self.prediction], feed_dict={self.inputs1: np.reshape(states, (states.shape[0], self.n_states))})
         return np.reshape(a, (states.shape[0], self.n_actions))
+
+    def save_network(self, id_tag=0):
+        return self.saver.save(self.sess, ".\Agent" + id_tag)
+
+    def restore_network(self, file_path):
+        self.saver.restore(self.sess, file_path)
 
 
 # Define the Memory class

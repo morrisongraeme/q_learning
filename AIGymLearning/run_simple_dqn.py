@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 # Choose environment and run settings
 env = gym.make('CartPole-v0')
 render = False
-max_episodes = 1000
+max_episodes = 700
 max_time_steps = 2000  # Note: environment is actually limited automatically to 200 steps unless we override
-n_learning_repeats = 2
+n_learning_repeats = 1
 n_states = env.observation_space.shape[0]
 n_actions = env.action_space.n
 
@@ -20,9 +20,13 @@ explore_rate_array = np.zeros((n_learning_repeats, max_episodes))
 # Loop over repeats
 for repeat in range(n_learning_repeats):
     # Initialise agent
-    agent = simple_dqn.Agent(n_states, n_actions, decay_explore=0.001)
+    agent = simple_dqn.Agent(n_states, n_actions, min_explore=0.01)
     # Loop over episodes
     for episode in range(max_episodes):
+        if np.mod(episode, 100) == 0:
+            render = True
+        else:
+            render = False
         episode_reward = agent.execute_episode(max_time_steps, render, env)
         explore_rate = agent.get_explore_rate()
         memory_size = agent.memory.get_memory_size()
@@ -30,9 +34,18 @@ for repeat in range(n_learning_repeats):
         explore_rate_array[repeat, episode] = memory_size
         if episode >= 10 and np.mod(episode, 10) == 0:
             print("Mean score over episodes " + str(episode - 10) + " to " + str(episode) + " = " +
-                  str(np.mean(reward_array[repeat, episode-10:episode])) + ", Memory Size = " + str(memory_size) + ", Explore Rate = " + str(explore_rate))
+                  str(np.mean(reward_array[repeat, episode-10:episode])) + ", Memory Size = " + str(memory_size) +
+                  ", Explore Rate = " + str(explore_rate))
+
+    save_path = agent.brain.save_network(str(repeat))
+    print(save_path)
+
 
 plots.plot_reward_explore_min_mean_max(reward_array, explore_rate_array)
 plots.plot_reward_explore_all(reward_array, explore_rate_array)
 plt.show()
 
+agent = simple_dqn.Agent(n_states, n_actions, max_explore=0, min_explore=0)
+agent.brain.restore_network(save_path)
+episode_reward = agent.execute_episode(max_time_steps, True, env)
+print(episode_reward)
