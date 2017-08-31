@@ -3,7 +3,9 @@ import random
 import tensorflow as tf
 
 
-# Function for creating tensorflow weight variables
+# Simple Deep Q Network agent based largely on https://jaromiru.com/2016/10/03/lets-make-a-dqn-implementation/
+
+# Function for creating tensorflow weight variables  - not currently being used!
 def weight_variable(shape):
     initial = tf.truncated_normal(shape, stddev=0.01)
     return tf.Variable(initial)
@@ -88,7 +90,7 @@ class Agent:
         return explore_rate
 
     def execute_episode(self, max_time_steps, render, env):
-        # Execute a single episode of the agent acting in the environment
+        # Execute a single episode of the agent acting and learning in the environment
         episode_reward = 0
         states = env.reset()
         for time_step in range(max_time_steps):
@@ -102,6 +104,26 @@ class Agent:
 
             self.observe((states, action, reward, new_states))  # Commit the state-action-reward set to memory
             self.replay()  # Replay a set of samples from the agent's memory and use these to train the agent
+
+            states = new_states
+            episode_reward += reward
+
+            if done:
+                break
+        return episode_reward
+
+    def replay_episode(self, max_time_steps, render, env):
+        # Execute a single episode of the trained agent acting in the environment, but not learning
+        episode_reward = 0
+        states = env.reset()
+        for time_step in range(max_time_steps):
+            if render:
+                env.render()
+            action = self.act(states)
+            new_states, reward, done, _ = env.step(action)
+
+            if done:
+                new_states = None
 
             states = new_states
             episode_reward += reward
@@ -149,8 +171,8 @@ class Brain:
         a = self.sess.run([self.prediction], feed_dict={self.inputs1: np.reshape(states, (states.shape[0], self.n_states))})
         return np.reshape(a, (states.shape[0], self.n_actions))
 
-    def save_network(self, id_tag=0):
-        return self.saver.save(self.sess, ".\Agent" + id_tag)
+    def save_network(self, file_path):
+        return self.saver.save(self.sess, file_path)
 
     def restore_network(self, file_path):
         self.saver.restore(self.sess, file_path)
