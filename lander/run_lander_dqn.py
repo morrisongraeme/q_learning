@@ -1,7 +1,7 @@
 import gym
 import numpy as np
 import agent as simple_dqn
-import results_plots as plots
+import AIGymLearning.results_plots as plots
 import matplotlib.pyplot as plt
 import gym.envs.box2d.lunar_lander as lunar_lander
 
