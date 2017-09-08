@@ -4,17 +4,34 @@ import simple_dqn_agent as simple_dqn
 import results_plots as plots
 import matplotlib.pyplot as plt
 
+# 1 for car, 2 for cartpole
+setup = 2
 
-# Choose environment and run settings
-env = gym.make('MountainCar-v0')
-max_time_steps = 100000  # Maximum number of time steps allowed per episode
-env._max_episode_steps = max_time_steps
-render = False
-max_episodes = 5000
+if setup == 1:
+    env = gym.make('MountainCar-v0')
+    max_time_steps = 100000  # Maximum number of time steps allowed per episode
+    env._max_episode_steps = max_time_steps
+    render = False
+    max_episodes = 5000
+    n_learning_repeats = 1
+    n_states = env.observation_space.shape[0]
+    n_actions = env.action_space.n-1  # Note we set this to n-1 because we are remapping the action space from size 3 to 2
+    options = {
+        'min_explore' : 0.1,
+        'fill_memory' : False,
+        'action_remap_gain' : 2
+    }
 
-n_learning_repeats = 1
-n_states = env.observation_space.shape[0]
-n_actions = env.action_space.n-1  # Note we set this to n-1 because we are remapping the action space from size 3 to 2
+elif setup == 2:
+    env = gym.make('CartPole-v0')
+    max_time_steps = 200  # Maximum number of time steps allowed per episode
+    env._max_episode_steps = max_time_steps
+    render = False
+    max_episodes = 1000
+    n_learning_repeats = 1
+    n_states = env.observation_space.shape[0]
+    n_actions = env.action_space.n
+    options = {}
 
 # Initialise empty arrays to store rewards and explore rates per learning repeat
 reward_array = np.zeros((n_learning_repeats, max_episodes))
@@ -23,7 +40,7 @@ save_paths = []
 # Loop over repeats
 for repeat in range(n_learning_repeats):
     # Initialise agent
-    agent = simple_dqn.Agent(n_states, n_actions, min_explore=0.1, fill_memory=False, action_remap_gain=2)
+    agent = simple_dqn.Agent(n_states, n_actions, **options)
     # Loop over episodes
     for episode in range(max_episodes):
         if np.mod(episode, 100) == 0 and episode > 0:  # Render one in every 100 episodes
