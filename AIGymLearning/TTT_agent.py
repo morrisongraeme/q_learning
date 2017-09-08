@@ -7,7 +7,7 @@ import math
 
 
 class Agent:
-    def __init__(self, n_states, state_box_low, state_box_high, discount=0.99, max_explore=1,
+    def __init__(self, n_states, discount=0.99, max_explore=1,
                  min_explore=0.01, decay_explore=0.0001, max_learn=0.5, min_learn=0.1, decay_learn=0.0001):
         # Initialise with zero steps taken
         self.steps = 0
@@ -20,10 +20,8 @@ class Agent:
         self.learning_decay_rate = decay_learn
         self.discount_factor = discount
         # Define size and discretisation of Q_Table
-        self.state_box_low = state_box_low  # Lower limits of discretised state in each dimension
-        self.state_box_high = state_box_high  # Upper limits of discretised state in each dimension
         self.n_states = n_states  # N x 1 vector, no. of discrete states in each state-space dimension
-        self.state = (0,0,0,0,0,0,0,0,0)  # N x 1 vector, no. of discrete states in each state-space dimension
+        self.state = (0, 0, 0, 0, 0, 0, 0, 0, 0)  # N x 1 vector, no. of discrete states in each state-space dimension
         self.n_actions = 9  # Scalar defining the number of possible actions
         self.n_observations = len(n_states)+1  # Dimension of the state space (or number of continuous observations)
         # Initialise empty Q_Table
@@ -57,15 +55,17 @@ class Agent:
         return explore_rate
 
     def execute_episode(self, max_time_steps, render):
+        # initialise empty board
         episode_reward = 0
         self.state = (0, 0, 0, 0, 0, 0, 0, 0, 0)
         for time_step in range(max_time_steps):
 
-            action = self.act(self.state)
-
+            # choose action (square to place marker)
             states = self.state
             x0, x1, x2, x3, x4, x5, x6, x7, x8 = states
+            action = self.act(states)
 
+            # place marker on square (if empty)
             if action == 0 and x0 == 0:
                 x0 = 1
             elif action == 1 and x1 == 0:
@@ -85,29 +85,30 @@ class Agent:
             elif action == 8 and x8 == 0:
                 x8 = 1
 
-            player_2 = random.randint(0, self.n_actions-1)
+            # player 2 chooses random square
+            player_2_action = random.randint(0, self.n_actions-1)
 
-            if player_2 == 0 and x0 == 0:
+            # place player 2's marker (if square empty)
+            if player_2_action == 0 and x0 == 0:
                 x0 = 2
-            elif player_2 == 1 and x1 == 0:
+            elif player_2_action == 1 and x1 == 0:
                 x1 = 2
-            elif player_2 == 2 and x2 == 0:
+            elif player_2_action == 2 and x2 == 0:
                 x2 = 2
-            elif player_2 == 3 and x3 == 0:
+            elif player_2_action == 3 and x3 == 0:
                 x3 = 2
-            elif player_2 == 4 and x4 == 0:
+            elif player_2_action == 4 and x4 == 0:
                 x4 = 2
-            elif player_2 == 5 and x5 == 0:
+            elif player_2_action == 5 and x5 == 0:
                 x5 = 2
-            elif player_2 == 6 and x6 == 0:
+            elif player_2_action == 6 and x6 == 0:
                 x6 = 2
-            elif player_2 == 7 and x7 == 0:
+            elif player_2_action == 7 and x7 == 0:
                 x7 = 2
-            elif player_2 == 8 and x8 == 0:
+            elif player_2_action == 8 and x8 == 0:
                 x8 = 2
 
-            self.state = (x0, x1, x2, x3, x4, x5, x6, x7, x8)
-
+            # check for player 1 win
             player_1_wins = (x0 == 1 and x1 == 1 and x2 == 1) \
                    or (x3 == 1 and x4 == 1 and x5 == 1) \
                    or (x6 == 1 and x7 == 1 and x8 == 1) \
@@ -115,9 +116,10 @@ class Agent:
                    or (x1 == 1 and x4 == 1 and x7 == 1) \
                    or (x2 == 1 and x5 == 1 and x8 == 1) \
                    or (x0 == 1 and x4 == 1 and x8 == 1) \
-                   or (x2 == 1 and x4 == 1 and x8 == 1)
+                   or (x2 == 1 and x4 == 1 and x6 == 1)
             player_1_wins = bool(player_1_wins)
 
+            # check for player 2 win
             player_2_wins = (x0 == 2 and x1 == 2 and x2 == 2) \
                             or (x3 == 2 and x4 == 2 and x5 == 2) \
                             or (x6 == 2 and x7 == 2 and x8 == 2) \
@@ -125,26 +127,33 @@ class Agent:
                             or (x1 == 2 and x4 == 2 and x7 == 2) \
                             or (x2 == 2 and x5 == 2 and x8 == 2) \
                             or (x0 == 2 and x4 == 2 and x8 == 2) \
-                            or (x2 == 2 and x4 == 2 and x8 == 2)
+                            or (x2 == 2 and x4 == 2 and x6 == 2)
             player_2_wins = bool(player_2_wins)
 
+            # check for draw
             players_draw = (x0 != 0 and x1 != 0 and x2 != 0 and x3 != 0 and x4 != 0 and x5 != 0 and x6 != 0 and x7 != 0 and x8 != 0)
 
+            # if game finished, allocate reward
             if player_1_wins:
                 reward = 1
             elif player_2_wins:
                 reward = -1
             else:
                 reward = 0
-
             done = player_1_wins or player_2_wins or players_draw
 
+            # update states and q table
+            self.state = (x0, x1, x2, x3, x4, x5, x6, x7, x8)
             new_states = self.state
             states = list(states)
             self.update(states, action, new_states, reward)
             episode_reward += reward
+
+            # end game if finished
             if done:
-                print(self.state)
+                print(self.state[0:3])
+                print(self.state[3:6])
+                print(self.state[6:9])
                 if player_1_wins:
                     print('player 1 wins')
                 elif player_2_wins:

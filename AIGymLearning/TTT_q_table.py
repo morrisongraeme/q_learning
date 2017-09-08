@@ -4,19 +4,16 @@ import TTT_agent as q_table
 import results_plots as plots
 import matplotlib.pyplot as plt
 
-
 # Choose environment and run settings
 render = False
 max_episodes = 10000
 max_time_steps = 10
 
 # Agent hyper-parameters
-n_states = (3,3,3,3,3,3,3,3,3)
-state_box_low = (0, 0, 0, 0, 0, 0, 0, 0, 0)
-state_box_high = (0, 0, 0, 0, 0, 0, 0, 0, 0)
+n_states = (3, 3, 3, 3, 3, 3, 3, 3, 3)
 
 # Initialise agent
-agent = q_table.Agent(n_states, state_box_low, state_box_high)
+agent = q_table.Agent(n_states)
 
 # Initialise empty list to store rewards per episode
 reward_list = []
@@ -36,5 +33,3 @@ for episode in range(max_episodes):
 
 plots.plot_reward_explore_learning(reward_list, explore_rate_list, learning_rate_list)
 plt.show()
-
-
