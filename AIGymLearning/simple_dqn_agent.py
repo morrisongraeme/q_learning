@@ -21,9 +21,11 @@ def bias_variable(shape):
 class Agent:
 
     def __init__(self, n_states, n_actions, discount=0.99, min_explore=0.01, max_explore=1,
-                 decay_explore=0.001, mem_capacity=100000, batch_size=64, n_hidden_neurons=64):
+                 decay_explore=0.001, mem_capacity=100000, batch_size=64, n_hidden_neurons=64, fill_memory=False,
+                 action_remap_gain=1):
         # Initialise number of steps as zero
         self.steps = 0
+        self.steps_filled = 0
         # Store hyper-parameters
         self.n_states = n_states
         self.n_actions = n_actions
@@ -32,8 +34,10 @@ class Agent:
         self.max_explore_rate = max_explore
         self.explore_decay_rate = decay_explore
         self.batch_size = batch_size
+        self.action_remap_gain = action_remap_gain
         # Initialise brain and memory
         self.brain = Brain(n_states, n_actions, n_hidden_neurons)
+        self.fill_memory = fill_memory
         self.memory = Memory(mem_capacity)
 
     def act(self, state):
@@ -85,7 +89,15 @@ class Agent:
 
     def get_explore_rate(self):
         # Compute and return explore rate based on number of steps experienced by agent
-        explore_rate = self.min_explore_rate + (self.max_explore_rate - self.min_explore_rate) * \
+        if self.fill_memory:
+            if self.memory.get_memory_size()<self.memory.capacity:
+                explore_rate = 1
+                self.steps_filled = self.steps
+            else:
+                explore_rate = self.min_explore_rate + (self.max_explore_rate - self.min_explore_rate) * \
+                                                       np.exp(-self.explore_decay_rate * (self.steps-self.steps_filled))
+        else:
+            explore_rate = self.min_explore_rate + (self.max_explore_rate - self.min_explore_rate) * \
                                                np.exp(-self.explore_decay_rate*self.steps)
         return explore_rate
 
@@ -97,13 +109,14 @@ class Agent:
             if render:
                 env.render()
             action = self.act(states)
-            new_states, reward, done, _ = env.step(action)
+            new_states, reward, done, _ = env.step(action*self.action_remap_gain)
 
             if done:
                 new_states = None
 
             self.observe((states, action, reward, new_states))  # Commit the state-action-reward set to memory
-            self.replay()  # Replay a set of samples from the agent's memory and use these to train the agent
+            if (not self.fill_memory) or self.memory.get_memory_size()>=self.memory.capacity:
+                self.replay()  # Replay a set of samples from the agent's memory and use these to train the agent
 
             states = new_states
             episode_reward += reward
