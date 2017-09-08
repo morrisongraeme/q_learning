@@ -7,8 +7,7 @@ import matplotlib.pyplot as plt
 
 # Choose environment and run settings
 env = gym.make('CartPole-v0')
-max_time_steps = 200  # Maximum number of time steps allowed per episode
-env._max_episode_steps = max_time_steps
+env._max_episode_steps = 200  # Maximum number of time steps allowed per episode
 render = False
 max_episodes = 1000
 
