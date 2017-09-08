@@ -101,7 +101,7 @@ class Agent:
                                                np.exp(-self.explore_decay_rate*self.steps)
         return explore_rate
 
-    def execute_episode(self, max_time_steps, render, env):
+    def execute_episode(self, render, env):
         # Execute a single episode of the agent acting and learning in the environment
         episode_reward = 0
         states = env.reset()

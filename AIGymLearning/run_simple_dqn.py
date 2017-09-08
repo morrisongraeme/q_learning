@@ -9,8 +9,7 @@ setup = 2
 
 if setup == 1:
     env = gym.make('MountainCar-v0')
-    max_time_steps = 100000  # Maximum number of time steps allowed per episode
-    env._max_episode_steps = max_time_steps
+    env._max_episode_steps = 100000  # Maximum number of time steps allowed per episode
     render = False
     max_episodes = 5000
     n_learning_repeats = 1
@@ -24,8 +23,7 @@ if setup == 1:
 
 elif setup == 2:
     env = gym.make('CartPole-v0')
-    max_time_steps = 200  # Maximum number of time steps allowed per episode
-    env._max_episode_steps = max_time_steps
+    env._max_episode_steps = 200  # Maximum number of time steps allowed per episode
     render = False
     max_episodes = 1000
     n_learning_repeats = 1
@@ -47,7 +45,7 @@ for repeat in range(n_learning_repeats):
             render = True
         else:
             render = False
-        episode_reward = agent.execute_episode(max_time_steps, render, env)
+        episode_reward = agent.execute_episode(render, env)
         explore_rate = agent.get_explore_rate()
         memory_size = agent.memory.get_memory_size()
         reward_array[repeat, episode] = episode_reward
