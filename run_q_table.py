@@ -1,7 +1,7 @@
 import gym
 import numpy as np
-import q_table_agent as q_table
-import results_plots as plots
+import agents.q_table as q_table
+import utils.results_plots as plots
 import matplotlib.pyplot as plt
 
 
