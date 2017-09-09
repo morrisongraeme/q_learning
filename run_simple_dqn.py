@@ -1,37 +1,44 @@
 import gym
 import numpy as np
-import simple_dqn_agent as simple_dqn
-import results_plots as plots
+import agents.simple_dqn as simple_dqn
+import utils.results_plots as plots
 import matplotlib.pyplot as plt
 
-# 1 for car, 2 for cartpole
-setup = 2
+# Generic settings
+render = False
+max_episodes = 10000
+n_learning_repeats = 1
+
+# Environment selection: 1 for MountainCar-v0, 2 for CartPole-v0, 3 for LunarLander-v2
+setup = 3
 
 if setup == 1:
     env = gym.make('MountainCar-v0')
-    max_time_steps = 100000  # Maximum number of time steps allowed per episode
-    env._max_episode_steps = max_time_steps
-    render = False
-    max_episodes = 5000
-    n_learning_repeats = 1
+    env._max_episode_steps = 100000  # Over-ride default maximum number of time steps allowed per episode
     n_states = env.observation_space.shape[0]
-    n_actions = env.action_space.n-1  # Note we set this to n-1 because we are remapping the action space from size 3 to 2
+    n_actions = env.action_space.n-1  # Set this to n-1 because we are remapping the action space from size 3 to 2
     options = {
-        'min_explore' : 0.1,
-        'fill_memory' : False,
-        'action_remap_gain' : 2
+        'min_explore': 0.1,
+        'fill_memory': True,
+        'action_remap_gain': 2
     }
 
 elif setup == 2:
     env = gym.make('CartPole-v0')
-    max_time_steps = 200  # Maximum number of time steps allowed per episode
-    env._max_episode_steps = max_time_steps
-    render = False
-    max_episodes = 1000
-    n_learning_repeats = 1
+    # env._max_episode_steps = 200  # Over-ride default maximum number of time steps allowed per episode
     n_states = env.observation_space.shape[0]
     n_actions = env.action_space.n
     options = {}
+
+elif setup == 3:
+    env = gym.make('LunarLander-v2')
+    # env._max_episode_steps = 200  # Over-ride default maximum number of time steps allowed per episode
+    n_states = env.observation_space.shape[0]
+    n_actions = env.action_space.n - 1  # Set this to n-1 because we are remapping the action space from size 3 to 2
+    options = {
+        'min_explore': 0.1,
+        'fill_memory': True
+    }
 
 # Initialise empty arrays to store rewards and explore rates per learning repeat
 reward_array = np.zeros((n_learning_repeats, max_episodes))
@@ -47,7 +54,7 @@ for repeat in range(n_learning_repeats):
             render = True
         else:
             render = False
-        episode_reward = agent.execute_episode(max_time_steps, render, env)
+        episode_reward = agent.execute_episode(render, env)
         explore_rate = agent.get_explore_rate()
         memory_size = agent.memory.get_memory_size()
         reward_array[repeat, episode] = episode_reward
@@ -57,20 +64,18 @@ for repeat in range(n_learning_repeats):
                   str(np.mean(reward_array[repeat, episode-10:episode])) + ", Memory Size = " + str(memory_size) +
                   ", Explore Rate = " + str(explore_rate))
 
-    save_paths.append(agent.brain.save_network("SimpleDQNs/Agent" + str(repeat)))  # Uncomment to save trained agents
-
-print(save_paths)
+    #save_paths.append(agent.brain.save_network("SimpleDQNs/Agent" + str(repeat)))  # Uncomment to save trained agents
 
 plots.plot_reward_explore_min_mean_max(reward_array, explore_rate_array)
 plots.plot_reward_explore_all(reward_array, explore_rate_array)
 plt.show()
 
 # Uncomment this section to replay ten episodes with each trained agent
-agent = simple_dqn.Agent(n_states, n_actions, max_explore=0, min_explore=0)
-for save_path in save_paths:
-    agent.brain.restore_network(save_path)
-    replay_rewards = np.zeros((10, 1))
-    for episode in range(10):
-        replay_rewards[episode] = agent.replay_episode(max_time_steps, True, env)
-    print("Trained agent " + save_path + " achieved average reward " +
-          str(np.mean(replay_rewards)) + " over 10 episodes")
+#agent = dqn.Agent(n_states, n_actions, max_explore=0, min_explore=0)
+#for save_path in save_paths:
+#    agent.brain.restore_network(save_path)
+#    replay_rewards = np.zeros((10, 1))
+#    for episode in range(10):
+#        replay_rewards[episode] = agent.replay_episode(max_time_steps, True, env)
+#    print("Trained agent " + save_path + " achieved average reward " +
+#          str(np.mean(replay_rewards)) + " over 10 episodes")
