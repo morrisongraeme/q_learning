@@ -6,16 +6,16 @@ import utils.results_plots as plots
 import matplotlib.pyplot as plt
 
 # Generic settings
-render_interval = 100
-max_episodes = 1000
+render_interval = 10000
+max_episodes = 5000
 n_learning_repeats = 1
 start_with_filled_memory = True
 monitor = True
 
 # Environment selection: 1 for MountainCar-v0, 2 for CartPole-v0, 3 for LunarLander-v2
 # env_name = 'MountainCar-v0'
-# env_name = 'CartPole-v0'
-env_name = 'LunarLander-v2'
+env_name = 'CartPole-v0'
+# env_name = 'LunarLander-v2'
 
 # Make selected environment
 env = gym.make(env_name)
@@ -25,7 +25,8 @@ if env_name is 'MountainCar-v0':
     env._max_episode_steps = 100000  # Over-ride default maximum number of time steps allowed per episode
     n_states = env.observation_space.shape[0]
     n_actions = env.action_space.n-1  # Set this to n-1 because we are remapping the action space from size 3 to 2
-    options = {'min_explore': 0.1, 'action_remap_gain': 2, 'separate_target': True, 'update_target_interval': 5000}
+    options = {'min_explore': 0.01, 'action_remap_gain': 2, 'separate_target': True, 'update_target_interval': 2000,
+               'decay_explore': 0.0001}
 elif env_name is 'CartPole-v0':
     # env._max_episode_steps = 200  # Over-ride default maximum number of time steps allowed per episode
     n_states = env.observation_space.shape[0]
