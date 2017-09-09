@@ -1,68 +1,75 @@
 import gym
 import numpy as np
-import agents.simple_dqn as simple_dqn
+import agents.q_network as dqn
 import utils.results_plots as plots
 import matplotlib.pyplot as plt
 
 # Generic settings
-render = False
-max_episodes = 10000
+render_interval = 100
+max_episodes = 4000
 n_learning_repeats = 1
+start_with_filled_memory = True
 
 # Environment selection: 1 for MountainCar-v0, 2 for CartPole-v0, 3 for LunarLander-v2
-setup = 3
+env_name = 'MountainCar-v0'
+# env_name = 'CartPole-v0'
+# env_name = 'LunarLander-v2'
 
-if setup == 1:
-    env = gym.make('MountainCar-v0')
-    env._max_episode_steps = 100000  # Over-ride default maximum number of time steps allowed per episode
+# Make selected environment
+env = gym.make(env_name)
+
+# Environment-specific settings
+if env_name is 'MountainCar-v0':
+    # env._max_episode_steps = 100000  # Over-ride default maximum number of time steps allowed per episode
     n_states = env.observation_space.shape[0]
     n_actions = env.action_space.n-1  # Set this to n-1 because we are remapping the action space from size 3 to 2
-    options = {
-        'min_explore': 0.1,
-        'fill_memory': True,
-        'action_remap_gain': 2
-    }
-
-elif setup == 2:
-    env = gym.make('CartPole-v0')
+    options = {'min_explore': 0.1, 'action_remap_gain': 2, 'separate_target': True, 'update_target_interval': 5000}
+elif env_name is 'CartPole-v0':
     # env._max_episode_steps = 200  # Over-ride default maximum number of time steps allowed per episode
     n_states = env.observation_space.shape[0]
     n_actions = env.action_space.n
-    options = {}
-
-elif setup == 3:
-    env = gym.make('LunarLander-v2')
+    options = {'separate_target': True}
+elif env_name is 'LunarLander-v2':
     # env._max_episode_steps = 200  # Over-ride default maximum number of time steps allowed per episode
     n_states = env.observation_space.shape[0]
     n_actions = env.action_space.n - 1  # Set this to n-1 because we are remapping the action space from size 3 to 2
-    options = {
-        'min_explore': 0.1,
-        'fill_memory': True
-    }
+    options = {'min_explore': 0.1}
 
 # Initialise empty arrays to store rewards and explore rates per learning repeat
 reward_array = np.zeros((n_learning_repeats, max_episodes))
 explore_rate_array = np.zeros((n_learning_repeats, max_episodes))
 save_paths = []
+
 # Loop over repeats
 for repeat in range(n_learning_repeats):
+
     # Initialise agent
-    agent = simple_dqn.Agent(n_states, n_actions, **options)
+    agent = dqn.Agent(n_states, n_actions, **options)
+    if start_with_filled_memory:
+        print('Allowing agent to randomly explore environment '
+              'until memory capacity is filled before commencing learning')
+        while agent.memory.get_memory_size() < agent.memory.capacity:
+            agent.execute_episode(False, env, explore_override=1, learn=False)
+
     # Loop over episodes
     for episode in range(max_episodes):
-        if np.mod(episode, 100) == 0 and episode > 0:  # Render one in every 100 episodes
+
+        # Render one in every render_interval episodes
+        if np.mod(episode, render_interval) == 0 and episode > 0:
             render = True
         else:
             render = False
-        episode_reward = agent.execute_episode(render, env)
-        explore_rate = agent.get_explore_rate()
+
+        # Execute the episode and store the reward, explore rate at finish and memory size at finish
+        reward_array[repeat, episode] = agent.execute_episode(render, env)
+        explore_rate_array[repeat, episode] = agent.get_explore_rate()
         memory_size = agent.memory.get_memory_size()
-        reward_array[repeat, episode] = episode_reward
-        explore_rate_array[repeat, episode] = explore_rate
-        if episode >= 10 and np.mod(episode, 10) == 0:
+
+        # Print some aggregated performance information every 10 episodes
+        if episode > 0 and np.mod(episode, 10) == 0:
             print("Mean score over episodes " + str(episode - 10) + " to " + str(episode) + " = " +
                   str(np.mean(reward_array[repeat, episode-10:episode])) + ", Memory Size = " + str(memory_size) +
-                  ", Explore Rate = " + str(explore_rate))
+                  ", Explore Rate = " + str(explore_rate_array[repeat, episode]))
 
     #save_paths.append(agent.brain.save_network("SimpleDQNs/Agent" + str(repeat)))  # Uncomment to save trained agents
 
