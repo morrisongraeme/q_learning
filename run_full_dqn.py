@@ -1,7 +1,7 @@
 import gym
 import numpy as np
-import full_dqn_agent as full_dqn
-import results_plots as plots
+import agents.full_dqn as full_dqn
+import utils.results_plots as plots
 import matplotlib.pyplot as plt
 
 
@@ -29,7 +29,7 @@ for repeat in range(n_learning_repeats):
             render = True
         else:
             render = False
-        episode_reward = agent.execute_episode(max_time_steps, render, env)
+        episode_reward = agent.execute_episode(render, env)
         explore_rate = agent.get_explore_rate()
         memory_size = agent.memory.get_memory_size()
         reward_array[repeat, episode] = episode_reward
@@ -39,20 +39,18 @@ for repeat in range(n_learning_repeats):
                   str(np.mean(reward_array[repeat, episode-10:episode])) + ", Memory Size = " + str(memory_size) +
                   ", Explore Rate = " + str(explore_rate))
 
-    save_paths.append(agent.brain.save_network("SimpleDQNs/Agent" + str(repeat)))  # Uncomment to save trained agents
-
-print(save_paths)
+#    save_paths.append(agent.brain.save_network("SimpleDQNs/Agent" + str(repeat)))  # Uncomment to save trained agents
 
 plots.plot_reward_explore_min_mean_max(reward_array, explore_rate_array)
 plots.plot_reward_explore_all(reward_array, explore_rate_array)
 plt.show()
 
 # Uncomment this section to replay ten episodes with each trained agent
-agent = full_dqn.Agent(n_states, n_actions, max_explore=0, min_explore=0)
-for save_path in save_paths:
-    agent.brain.restore_network(save_path)
-    replay_rewards = np.zeros((10, 1))
-    for episode in range(10):
-        replay_rewards[episode] = agent.replay_episode(max_time_steps, True, env)
-    print("Trained agent " + save_path + " achieved average reward " +
-          str(np.mean(replay_rewards)) + " over 10 episodes")
+# agent = full_dqn.Agent(n_states, n_actions, max_explore=0, min_explore=0)
+# for save_path in save_paths:
+#    agent.brain.restore_network(save_path)
+#    replay_rewards = np.zeros((10, 1))
+#    for episode in range(10):
+#        replay_rewards[episode] = agent.replay_episode(max_time_steps, True, env)
+#    print("Trained agent " + save_path + " achieved average reward " +
+#          str(np.mean(replay_rewards)) + " over 10 episodes")

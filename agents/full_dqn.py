@@ -5,13 +5,13 @@ import tensorflow as tf
 
 # Simple Deep Q Network agent based largely on https://jaromiru.com/2016/10/03/lets-make-a-dqn-implementation/
 
-# Function for creating tensorflow weight variables  - not currently being used!
+# Function for creating tensorFlow weight variables  - not currently being used!
 def weight_variable(shape):
     initial = tf.truncated_normal(shape, stddev=0.01)
     return tf.Variable(initial)
 
 
-# Function for creating tensorflow bias variables
+# Function for creating tensorFlow bias variables
 def bias_variable(shape):
     initial = tf.constant(float(0), shape=shape)
     return tf.Variable(initial)
@@ -105,7 +105,7 @@ class Agent:
                                                np.exp(-self.explore_decay_rate*self.steps)
         return explore_rate
 
-    def execute_episode(self, max_time_steps, render, env):
+    def execute_episode(self, render, env):
         # Execute a single episode of the agent acting and learning in the environment
         episode_reward = 0
         states = env.reset()
@@ -129,11 +129,11 @@ class Agent:
                 break
         return episode_reward
 
-    def replay_episode(self, max_time_steps, render, env):
+    def replay_episode(self, render, env):
         # Execute a single episode of the trained agent acting in the environment, but not learning
         episode_reward = 0
         states = env.reset()
-        for time_step in range(max_time_steps):
+        while True:
             if render:
                 env.render()
             action = self.act(states)
