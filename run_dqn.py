@@ -1,4 +1,5 @@
 import gym
+from gym import wrappers
 import numpy as np
 import agents.q_network as dqn
 import utils.results_plots as plots
@@ -9,6 +10,7 @@ render_interval = 100
 max_episodes = 1000
 n_learning_repeats = 1
 start_with_filled_memory = True
+monitor = True
 
 # Environment selection: 1 for MountainCar-v0, 2 for CartPole-v0, 3 for LunarLander-v2
 # env_name = 'MountainCar-v0'
@@ -53,6 +55,8 @@ for repeat in range(n_learning_repeats):
             agent.execute_episode(False, env, explore_override=1, learn=False)
 
     # Loop over episodes
+    if monitor:
+        env = wrappers.Monitor(env, '/monitors/' + env_name, force=True)
     for episode in range(max_episodes):
 
         # Render one in every render_interval episodes
