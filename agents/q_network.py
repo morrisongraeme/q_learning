@@ -11,7 +11,7 @@ class Agent:
 
     def __init__(self, n_states, n_actions, discount=0.99, min_explore=0.01, max_explore=1,
                  decay_explore=0.001, mem_capacity=100000, batch_size=64, n_hidden_neurons=64,
-                 action_remap_gain=1, separate_target=False, update_target_interval=2000):
+                 action_remap_gain=1, separate_target=False, update_target_interval=2000, loss_type='mse'):
         # Initialise number of steps as zero
         self.steps = 0
         # Store hyper-parameters
@@ -26,7 +26,7 @@ class Agent:
         self.separate_target = separate_target
         self.update_target_interval = update_target_interval
         # Initialise brain and memory
-        self.brain = Brain(n_states, n_actions, n_hidden_neurons, separate_target)
+        self.brain = Brain(n_states, n_actions, n_hidden_neurons, separate_target, loss_type)
         self.memory = Memory(mem_capacity)
 
     def act(self, state, explore_override):
@@ -120,13 +120,13 @@ class Agent:
 
 # Define the Brain class
 class Brain:
-    def __init__(self, n_states, n_actions, n_hidden_neurons, separate_target):
+    def __init__(self, n_states, n_actions, n_hidden_neurons, separate_target, loss_type):
         self.n_states = n_states
         self.n_actions = n_actions
         self.n_hidden_neurons = n_hidden_neurons
-        self.sess = self._create_sess(separate_target)
+        self.sess = self._create_sess(separate_target, loss_type)
 
-    def _create_sess(self, separate_target):
+    def _create_sess(self, separate_target, loss_type):
         # Create a tensorFlow session, which defines the NN used in the agent's brain and the training approach
         tf.reset_default_graph()
 
@@ -154,7 +154,10 @@ class Brain:
             self.prediction_t = tf.matmul(h1_t, self.w2_t) + self.b2_t
 
         # Define loss function and training
-        loss = tf.reduce_mean(tf.squared_difference(self.next_q, self.prediction))
+        if loss_type is 'mse':
+            loss = tf.reduce_mean(tf.squared_difference(self.next_q, self.prediction))
+        elif loss_type is 'huber':
+            loss = tf.losses.huber_loss(self.next_q, self.prediction)
         trainer = tf.train.RMSPropOptimizer(learning_rate=0.00025)
         self.update_model = trainer.minimize(loss)
 

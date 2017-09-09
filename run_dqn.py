@@ -34,7 +34,7 @@ elif env_name is 'LunarLander-v2':
     n_states = env.observation_space.shape[0]
     n_actions = env.action_space.n
     options = {'min_explore': 0.01, 'decay_explore': 0.0001, 'n_hidden_neurons': 256, 'separate_target': True,
-               'update_target_interval': 5000}
+               'update_target_interval': 5000, 'loss_type': 'huber'}
 
 # Initialise empty arrays to store rewards and explore rates per learning repeat
 reward_array = np.zeros((n_learning_repeats, max_episodes))
