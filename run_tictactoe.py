@@ -1,7 +1,7 @@
 import gym
 import numpy as np
-import TTT_agent as q_table
-import results_plots as plots
+import agents.q_table_tictactoe as q_table
+import utils.results_plots as plots
 import matplotlib.pyplot as plt
 
 # Choose environment and run settings

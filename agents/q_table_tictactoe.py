@@ -2,9 +2,7 @@ import numpy as np
 import random
 import math
 
-# Q-table learning agent for the openAI Gym CartPole-v0 environment, based largely on
-# https://medium.com/emergent-future/simple-reinforcement-learning-with-tensorflow-part-0-q-learning-with-tables-and-neural-networks-d195264329d0
-
+# Q-table learning agent and environment for tic-tac-toe, created by Chris Nash
 
 class Agent:
     def __init__(self, n_states, discount=0.99, max_explore=1,
