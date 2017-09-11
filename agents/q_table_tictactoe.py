@@ -83,39 +83,40 @@ class Agent:
             elif action == 8 and x8 == 0:
                 x8 = 1
 
+            # check for player 1 win
+            player_1_wins = (x0 == 1 and x1 == 1 and x2 == 1) \
+                            or (x3 == 1 and x4 == 1 and x5 == 1) \
+                            or (x6 == 1 and x7 == 1 and x8 == 1) \
+                            or (x0 == 1 and x3 == 1 and x6 == 1) \
+                            or (x1 == 1 and x4 == 1 and x7 == 1) \
+                            or (x2 == 1 and x5 == 1 and x8 == 1) \
+                            or (x0 == 1 and x4 == 1 and x8 == 1) \
+                            or (x2 == 1 and x4 == 1 and x6 == 1)
+            player_1_wins = bool(player_1_wins)
+
             # player 2 chooses random square
             player_2_action = random.randint(0, self.n_actions-1)
 
             # place player 2's marker (if square empty)
-            if player_2_action == 0 and x0 == 0:
-                x0 = 2
-            elif player_2_action == 1 and x1 == 0:
-                x1 = 2
-            elif player_2_action == 2 and x2 == 0:
-                x2 = 2
-            elif player_2_action == 3 and x3 == 0:
-                x3 = 2
-            elif player_2_action == 4 and x4 == 0:
-                x4 = 2
-            elif player_2_action == 5 and x5 == 0:
-                x5 = 2
-            elif player_2_action == 6 and x6 == 0:
-                x6 = 2
-            elif player_2_action == 7 and x7 == 0:
-                x7 = 2
-            elif player_2_action == 8 and x8 == 0:
-                x8 = 2
-
-            # check for player 1 win
-            player_1_wins = (x0 == 1 and x1 == 1 and x2 == 1) \
-                   or (x3 == 1 and x4 == 1 and x5 == 1) \
-                   or (x6 == 1 and x7 == 1 and x8 == 1) \
-                   or (x0 == 1 and x3 == 1 and x6 == 1) \
-                   or (x1 == 1 and x4 == 1 and x7 == 1) \
-                   or (x2 == 1 and x5 == 1 and x8 == 1) \
-                   or (x0 == 1 and x4 == 1 and x8 == 1) \
-                   or (x2 == 1 and x4 == 1 and x6 == 1)
-            player_1_wins = bool(player_1_wins)
+            if not player_1_wins:
+                if player_2_action == 0 and x0 == 0:
+                    x0 = 2
+                elif player_2_action == 1 and x1 == 0:
+                    x1 = 2
+                elif player_2_action == 2 and x2 == 0:
+                    x2 = 2
+                elif player_2_action == 3 and x3 == 0:
+                    x3 = 2
+                elif player_2_action == 4 and x4 == 0:
+                    x4 = 2
+                elif player_2_action == 5 and x5 == 0:
+                    x5 = 2
+                elif player_2_action == 6 and x6 == 0:
+                    x6 = 2
+                elif player_2_action == 7 and x7 == 0:
+                    x7 = 2
+                elif player_2_action == 8 and x8 == 0:
+                    x8 = 2
 
             # check for player 2 win
             player_2_wins = (x0 == 2 and x1 == 2 and x2 == 2) \

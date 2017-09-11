@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 # Choose environment and run settings
 env = gym.make('CartPole-v0')
-render = False
+render = True
 max_episodes = 2000
 max_time_steps = 200
 
