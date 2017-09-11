@@ -1,31 +1,19 @@
 import numpy as np
 import random
 import tensorflow as tf
+import agents.tensorflow_utils as tf_utils
 
 
 # Simple Deep Q Network agent based largely on https://jaromiru.com/2016/10/03/lets-make-a-dqn-implementation/
-
-# Function for creating tensorflow weight variables  - not currently being used!
-def weight_variable(shape):
-    initial = tf.truncated_normal(shape, stddev=0.01)
-    return tf.Variable(initial)
-
-
-# Function for creating tensorflow bias variables
-def bias_variable(shape):
-    initial = tf.constant(float(0), shape=shape)
-    return tf.Variable(initial)
-
 
 # Define the Agent class
 class Agent:
 
     def __init__(self, n_states, n_actions, discount=0.99, min_explore=0.01, max_explore=1,
-                 decay_explore=0.001, mem_capacity=100000, batch_size=64, n_hidden_neurons=64, fill_memory=False,
-                 action_remap_gain=1):
+                 decay_explore=0.001, mem_capacity=100000, batch_size=64, n_hidden_neurons=64,
+                 action_remap_gain=1, separate_target=False, update_target_interval=2000, loss_type='mse'):
         # Initialise number of steps as zero
         self.steps = 0
-        self.steps_filled = 0
         # Store hyper-parameters
         self.n_states = n_states
         self.n_actions = n_actions
@@ -35,15 +23,19 @@ class Agent:
         self.explore_decay_rate = decay_explore
         self.batch_size = batch_size
         self.action_remap_gain = action_remap_gain
+        self.separate_target = separate_target
+        self.update_target_interval = update_target_interval
         # Initialise brain and memory
-        self.brain = Brain(n_states, n_actions, n_hidden_neurons)
-        self.fill_memory = fill_memory
+        self.brain = Brain(n_states, n_actions, n_hidden_neurons, separate_target, loss_type)
         self.memory = Memory(mem_capacity)
 
-    def act(self, state):
+    def act(self, state, explore_override):
         # Select the next action, depending on explore rate
-        self.steps += 1
-        explore_rate = self.get_explore_rate()
+        if explore_override < 0:
+            explore_rate = self.get_explore_rate()
+        else:
+            explore_rate = explore_override
+
         if random.random() < explore_rate:
             return random.randint(0, self.n_actions-1)
         else:
@@ -55,6 +47,11 @@ class Agent:
 
     def replay(self):
         # Replay observations from memory and use these to train the agent
+
+        if self.separate_target and self.steps % self.update_target_interval == 0:
+            print('Copying q network parameters to target network')
+            self.brain.copy_to_target()
+
         batch = self.memory.sample(self.batch_size)
         batch_length = len(batch)
 
@@ -64,7 +61,7 @@ class Agent:
         new_states = np.array([(no_state if observation[3] is None else observation[3]) for observation in batch])
 
         predictions = self.brain.predict(states)
-        new_predictions = self.brain.predict(new_states)
+        new_predictions = self.brain.predict(new_states, target=self.separate_target)
 
         inputs = np.zeros((batch_length, self.n_states))
         outputs = np.zeros((batch_length, self.n_actions))
@@ -89,54 +86,29 @@ class Agent:
 
     def get_explore_rate(self):
         # Compute and return explore rate based on number of steps experienced by agent
-        if self.fill_memory:
-            if self.memory.get_memory_size()<self.memory.capacity:
-                explore_rate = 1
-                self.steps_filled = self.steps
-            else:
-                explore_rate = self.min_explore_rate + (self.max_explore_rate - self.min_explore_rate) * \
-                                                       np.exp(-self.explore_decay_rate * (self.steps-self.steps_filled))
-        else:
-            explore_rate = self.min_explore_rate + (self.max_explore_rate - self.min_explore_rate) * \
+        explore_rate = self.min_explore_rate + (self.max_explore_rate - self.min_explore_rate) * \
                                                np.exp(-self.explore_decay_rate*self.steps)
         return explore_rate
 
-    def execute_episode(self, max_time_steps, render, env):
+    def execute_episode(self, render, env, explore_override=-1, learn=True, observe=True):
         # Execute a single episode of the agent acting and learning in the environment
         episode_reward = 0
         states = env.reset()
         while True:
             if render:
                 env.render()
-            action = self.act(states)
+            action = self.act(states, explore_override)
             new_states, reward, done, _ = env.step(action*self.action_remap_gain)
 
             if done:
                 new_states = None
 
-            self.observe((states, action, reward, new_states))  # Commit the state-action-reward set to memory
-            if (not self.fill_memory) or self.memory.get_memory_size()>=self.memory.capacity:
+            if observe:
+                self.observe((states, action, reward, new_states))  # Commit the state-action-reward set to memory
+
+            if learn:
                 self.replay()  # Replay a set of samples from the agent's memory and use these to train the agent
-
-            states = new_states
-            episode_reward += reward
-
-            if done:
-                break
-        return episode_reward
-
-    def replay_episode(self, max_time_steps, render, env):
-        # Execute a single episode of the trained agent acting in the environment, but not learning
-        episode_reward = 0
-        states = env.reset()
-        for time_step in range(max_time_steps):
-            if render:
-                env.render()
-            action = self.act(states)
-            new_states, reward, done, _ = env.step(action)
-
-            if done:
-                new_states = None
+                self.steps += 1  # Steps counter only increases if we are learning
 
             states = new_states
             episode_reward += reward
@@ -148,40 +120,69 @@ class Agent:
 
 # Define the Brain class
 class Brain:
-    def __init__(self, n_states, n_actions, n_hidden_neurons):
+    def __init__(self, n_states, n_actions, n_hidden_neurons, separate_target, loss_type):
         self.n_states = n_states
         self.n_actions = n_actions
         self.n_hidden_neurons = n_hidden_neurons
-        self.sess = self._create_sess()
+        self.sess = self._create_sess(separate_target, loss_type)
 
-    def _create_sess(self):
-        # Create a tensorflow session, which defines the NN used in the agent's brain and the training approach
+    def _create_sess(self, separate_target, loss_type):
+        # Create a tensorFlow session, which defines the NN used in the agent's brain and the training approach
         tf.reset_default_graph()
+
+        # Define input, variable and output placeholders for q network
         self.inputs1 = tf.placeholder(shape=[None, self.n_states], dtype=tf.float32)
         self.w1 = tf.get_variable("w1", shape=[self.n_states, self.n_hidden_neurons])
-        self.b1 = bias_variable([self.n_hidden_neurons])
+        self.b1 = tf_utils.bias_variable([self.n_hidden_neurons])
         self.w2 = tf.get_variable("w2", shape=[self.n_hidden_neurons, self.n_actions])
-        self.b2 = bias_variable([self.n_actions])
+        self.b2 = tf_utils.bias_variable([self.n_actions])
         h1 = tf.nn.relu(tf.matmul(self.inputs1, self.w1) + self.b1)
-        q_out = tf.matmul(h1, self.w2) + self.b2
-        self.prediction = q_out
+        self.prediction = tf.matmul(h1, self.w2) + self.b2
         self.next_q = tf.placeholder(shape=[None, self.n_actions], dtype=tf.float32)
-        loss = tf.reduce_mean(tf.squared_difference(self.next_q, q_out))
+
+        # If we are using a separate target network, define its variables and functions to copy them from q network
+        if separate_target:
+            self.w1_t = tf.get_variable("w1_t", shape=[self.n_states, self.n_hidden_neurons])
+            self.b1_t = tf_utils.bias_variable([self.n_hidden_neurons])
+            self.w2_t = tf.get_variable("w2_t", shape=[self.n_hidden_neurons, self.n_actions])
+            self.b2_t = tf_utils.bias_variable([self.n_actions])
+            self.copy_w1 = self.w1_t.assign(self.w1)
+            self.copy_w2 = self.w2_t.assign(self.w2)
+            self.copy_b1 = self.b1_t.assign(self.b1)
+            self.copy_b2 = self.b2_t.assign(self.b2)
+            h1_t = tf.nn.relu(tf.matmul(self.inputs1, self.w1_t) + self.b1_t)
+            self.prediction_t = tf.matmul(h1_t, self.w2_t) + self.b2_t
+
+        # Define loss function and training
+        if loss_type is 'mse':
+            loss = tf.reduce_mean(tf.squared_difference(self.next_q, self.prediction))
+        elif loss_type is 'huber':
+            loss = tf.losses.huber_loss(self.next_q, self.prediction)
         trainer = tf.train.RMSPropOptimizer(learning_rate=0.00025)
         self.update_model = trainer.minimize(loss)
+
+        # Initialise session
         init = tf.global_variables_initializer()
         sess = tf.Session()
         sess.run(init)
+
+        # Define a saver for saving off network parameters to a file
         self.saver = tf.train.Saver([self.w1, self.w2, self.b1, self.b2])  # Define a saver to use later
+
         return sess
 
     def train(self, inputs, outputs):
         # Train the agent's brain
         self.sess.run([self.update_model], feed_dict={self.inputs1: inputs, self.next_q: outputs})
 
-    def predict(self, states):
+    def predict(self, states, target=False):
         # NN prediction of q values for a set of state inputs
-        a = self.sess.run([self.prediction], feed_dict={self.inputs1: np.reshape(states, (states.shape[0], self.n_states))})
+        if target:
+            a = self.sess.run([self.prediction_t],
+                              feed_dict={self.inputs1: np.reshape(states, (states.shape[0], self.n_states))})
+        else:
+            a = self.sess.run([self.prediction],
+                              feed_dict={self.inputs1: np.reshape(states, (states.shape[0], self.n_states))})
         return np.reshape(a, (states.shape[0], self.n_actions))
 
     def save_network(self, file_path):
@@ -189,6 +190,12 @@ class Brain:
 
     def restore_network(self, file_path):
         self.saver.restore(self.sess, file_path)
+
+    def copy_to_target(self):
+        self.sess.run([self.copy_w1])
+        self.sess.run([self.copy_w2])
+        self.sess.run([self.copy_b1])
+        self.sess.run([self.copy_b2])
 
 
 # Define the Memory class
