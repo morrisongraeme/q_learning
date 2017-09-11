@@ -11,7 +11,8 @@ class Agent:
 
     def __init__(self, n_states, n_actions, discount=0.99, min_explore=0.01, max_explore=1,
                  decay_explore=0.001, mem_capacity=100000, batch_size=64, n_hidden_neurons=64,
-                 action_remap_gain=1, separate_target=False, update_target_interval=2000, loss_type='mse'):
+                 action_remap_gain=1, separate_target=False, update_target_interval=2000, loss_type='mse',
+                 double_dqn=False):
         # Initialise number of steps as zero
         self.steps = 0
         # Store hyper-parameters
@@ -23,8 +24,13 @@ class Agent:
         self.explore_decay_rate = decay_explore
         self.batch_size = batch_size
         self.action_remap_gain = action_remap_gain
-        self.separate_target = separate_target
         self.update_target_interval = update_target_interval
+        self.double_dqn = double_dqn
+        if double_dqn and not separate_target:
+            separate_target = True
+            print("Note: changing separate_target setting from False to True because double_dqn is set to True "
+                  "and requires a separate target network")
+        self.separate_target = separate_target
         # Initialise brain and memory
         self.brain = Brain(n_states, n_actions, n_hidden_neurons, separate_target, loss_type)
         self.memory = Memory(mem_capacity)
@@ -62,6 +68,8 @@ class Agent:
 
         predictions = self.brain.predict(states)
         new_predictions = self.brain.predict(new_states, target=self.separate_target)
+        if self.double_dqn:
+            new_predictions_main_network = self.brain.predict(new_states)
 
         inputs = np.zeros((batch_length, self.n_states))
         outputs = np.zeros((batch_length, self.n_actions))
@@ -77,7 +85,11 @@ class Agent:
             if new_state is None:
                 target[action] = reward
             else:
-                target[action] = reward + self.discount_factor*np.amax(new_predictions[i])
+                if self.double_dqn:
+                    target[action] = reward + self.discount_factor * \
+                                              new_predictions[i][np.argmax(new_predictions_main_network[i])]
+                else:
+                    target[action] = reward + self.discount_factor*np.amax(new_predictions[i])
 
             inputs[i] = state
             outputs[i] = target

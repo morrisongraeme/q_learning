@@ -7,15 +7,15 @@ import matplotlib.pyplot as plt
 
 # Generic settings
 render_interval = 10000
-max_episodes = 5000
-n_learning_repeats = 1
+max_episodes = 1000
+n_learning_repeats = 3
 start_with_filled_memory = True
-monitor = True
+monitor = False
 
-# Environment selection: 1 for MountainCar-v0, 2 for CartPole-v0, 3 for LunarLander-v2
+# Environment selection
 # env_name = 'MountainCar-v0'
-env_name = 'CartPole-v0'
-# env_name = 'LunarLander-v2'
+# env_name = 'CartPole-v0'
+env_name = 'LunarLander-v2'
 
 # Make selected environment
 env = gym.make(env_name)
@@ -31,13 +31,13 @@ elif env_name is 'CartPole-v0':
     # env._max_episode_steps = 200  # Over-ride default maximum number of time steps allowed per episode
     n_states = env.observation_space.shape[0]
     n_actions = env.action_space.n
-    options = {'separate_target': True}
+    options = {'separate_target': True, 'loss_type': 'mse', 'double_dqn': True}
 elif env_name is 'LunarLander-v2':
     # env._max_episode_steps = 200  # Over-ride default maximum number of time steps allowed per episode
     n_states = env.observation_space.shape[0]
     n_actions = env.action_space.n
-    options = {'min_explore': 0.01, 'decay_explore': 0.0001, 'n_hidden_neurons': 256, 'separate_target': True,
-               'update_target_interval': 5000, 'loss_type': 'huber'}
+    options = {'min_explore': 0.01, 'decay_explore': 0.001, 'n_hidden_neurons': 256, 'separate_target': True,
+               'update_target_interval': 5000, 'loss_type': 'huber', 'double_dqn': True}
 
 # Initialise empty arrays to store rewards and explore rates per learning repeat
 reward_array = np.zeros((n_learning_repeats, max_episodes))
